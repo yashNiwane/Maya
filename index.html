@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Counselor Maya Chat - Stream Selection Guidance</title>
+    <meta name="description" content="Get personalized guidance for stream selection after completing the 10th standard from Maharashtra State Board. Chat with AI Counselor Maya for expert advice on Arts, Commerce, and Science streams.">
+    <link rel="shortcut icon" href="assets/fevicon/favicon.ico" type="image/x-icon">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js"></script>
+</head>
+
+<body class="flex flex-col justify-between h-screen bg-gray-50">
+    <header class="bg-gradient-to-r from-green-400 to-blue-500 p-4 shadow-md">
+        <h1 class="text-3xl font-bold text-center text-white">Maya - The Ai Counselor</h1>
+    </header>
+    <main class="flex flex-col flex-grow overflow-y-auto p-4 space-y-4" id="messageHolder">
+        <div class="flex flex-col items-center space-y-2">
+            <p class="text-gray-600">Get personalized guidance for stream selection after completing the 10th standard from Maharashtra State Board. Chat with AI Counselor Maya for expert advice on Arts, Commerce, and Science streams.</p>
+        </div>
+    </main>
+    <footer class="bg-white p-4 shadow-md flex">
+        <input type="text" class="flex-1 border rounded-md p-2 outline-none ring-2 ring-blue-400 border-transparent focus:ring-blue-600 transition" placeholder="Chat..." name="chat" id="chat">
+        <button id="btn" class="ml-2 bg-blue-600 p-2 rounded-md text-white hover:bg-blue-700 transition">Send</button>
+    </footer>
+    <script type="importmap">
+        {
+            "imports": {
+                "@google/generative-ai": "https://esm.run/@google/generative-ai"
+            }
+        }
+    </script>
+    <script type="module">
+        import { GoogleGenerativeAI } from "@google/generative-ai";
+        const conv = new showdown.Converter();
+
+        const genAI = new GoogleGenerativeAI("AIzaSyBXlJLv05vevc9gyF-llhoto_oenOGGZ-o");
+        const gen_model = genAI.getGenerativeModel({ model: "gemini-pro" });
+        const chat = gen_model.startChat({
+            generationConfig: {
+                maxOutputTokens: 1000,
+            },
+            context: "You are Maya, renowned for your excellence in guiding students. Your responsibility is to assist students who have just completed the 10th standard in selecting the most suitable stream among Arts, Commerce, and Science. Initiate the conversation by posing a question (while asking the question keep the vision of future). All the students belong to the Maharashtra State Board of India. Ask at least 10 questions (ask one question at a time) until you gather sufficient data to provide guidance. Ask small and precise questions. (Ask one question at a time to make session interactive)",
+        });
+
+        const chatGemini = async (message) => {
+            addMessage(message, "user");
+            const loadingMessage = addLoadingMessage();
+            let res = await chat.sendMessage(message);
+            res = await res.response;
+            console.log(res);
+            let html = conv.makeHtml(res.text());
+            removeLoadingMessage(loadingMessage);
+            addMessage(html, "ai");
+        };
+
+        const addMessage = (msg, sender) => {
+            const messageHolder = document.getElementById("messageHolder");
+            const message = document.createElement("div");
+            const alignment = sender === "ai" ? "justify-end" : "justify-start";
+            const colour = sender === "ai" ? "bg-blue-600 text-white" : "bg-green-200 text-green-900";
+
+            message.innerHTML = `
+                <div class="flex ${alignment}">
+                    <div class="${colour} px-4 py-2 rounded-md w-fit max-w-xl shadow-lg">
+                        ${msg}
+                    </div>
+                </div>
+            `;
+            messageHolder.appendChild(message);
+            messageHolder.scrollTop = messageHolder.scrollHeight; // Auto-scroll to the latest message
+        };
+
+        const addLoadingMessage = () => {
+            const messageHolder = document.getElementById("messageHolder");
+            const loadingMessage = document.createElement("div");
+            loadingMessage.classList.add("flex", "justify-end", "loading-message");
+            loadingMessage.innerHTML = `
+                <div class="bg-blue-600 text-white px-4 py-2 rounded-md w-fit max-w-xl shadow-lg">
+                    <div class="flex items-center space-x-2">
+                        <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-6 w-6"></div>
+                        <span>Typing...</span>
+                    </div>
+                </div>
+            `;
+            messageHolder.appendChild(loadingMessage);
+            messageHolder.scrollTop = messageHolder.scrollHeight;
+            return loadingMessage;
+        };
+
+        const removeLoadingMessage = (loadingMessage) => {
+            loadingMessage.remove();
+        };
+
+        const messageInput = document.getElementById("chat");
+        const sendBtn = document.getElementById("btn");
+
+        const sendMessage = () => {
+            const message = messageInput.value;
+            if (message.trim()) {
+                chatGemini(message);
+                messageInput.value = "";
+                messageInput.focus();
+            }
+        };
+
+        sendBtn.addEventListener("click", sendMessage);
+        messageInput.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") sendMessage();
+        });
+
+        // Send the default prompt without displaying it as a user message
+        const defaultPrompt = async () => {
+            const loadingMessage = addLoadingMessage();
+            let res = await chat.sendMessage("You are Maya, a renowned expert in guiding students. Your role is to help students who have just completed the 10th standard from the Maharashtra State Board of India choose best path among all possible paths. To provide proper guidance, you will ask a series of different questions, **one at a time** to keep the session interactive like  you are talking to student");
+            res = await res.response;
+            console.log(res);
+            let html = conv.makeHtml(res.text());
+            removeLoadingMessage(loadingMessage);
+            addMessage(html, "ai");
+        };
+
+        window.onload = () => {
+            defaultPrompt();
+        };
+    </script>
+</body>
+
+</html>
